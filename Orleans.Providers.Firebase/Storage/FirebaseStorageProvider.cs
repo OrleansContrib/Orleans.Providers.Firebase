@@ -10,8 +10,6 @@ namespace Orleans.Providers.Firebase.Storage
 {
     public class FirebaseStorageProvider : IStorageProvider
     {
-        private const string GrainSuffix = "Grain";
-
         public Logger Log { get; set; }
 
         public string Name { get; set; }
@@ -61,7 +59,7 @@ namespace Orleans.Providers.Firebase.Storage
         private string ConstructGrainPath(string grainType, GrainReference grainReference)
         {
             var grainTypeName = grainType.Split('.').Last();
-            var pathName = grainTypeName.Length > 5 && grainTypeName.EndsWith(GrainSuffix)
+            var pathName = grainTypeName.Length > 5 && grainTypeName.EndsWith("Grain")
                 ? grainTypeName.Substring(0, grainTypeName.Length - 5)
                 : grainTypeName;
             var grainRefString = grainReference.ToString();
