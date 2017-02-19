@@ -2,7 +2,8 @@
 <OrleansConfiguration xmlns="urn:orleans">
   <Globals>
     <StorageProviders>
-      <Provider Type="Orleans.Providers.Firebase.Storage.FirebaseStorageProvider" Name="Default" BasePath="https://orleansprovider.firebaseio.com"/>
+      <Provider Type="Orleans.Providers.Firebase.Storage.FirebaseStorageProvider" Name="Default" BasePath="https://orleansprovider.firebaseio.com"
+                CustomPaths="CustomPathInstanceGrain=custom/path/instance/{instance};CustomPathSingletonGrain=custom/path/singleton"/>
     </StorageProviders>
     <BootstrapProviders>
       <Provider Type="Orleans.Providers.Firebase.Test.Host.Bootstrap.FirebaseTestBootstrap" Name="BootstrapProvider" />
