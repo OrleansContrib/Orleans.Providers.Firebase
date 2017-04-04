@@ -28,7 +28,10 @@ namespace Orleans.Providers.Firebase.Membership
             _deploymentId = string.IsNullOrEmpty(globalConfiguration.DeploymentId) ? "Default" : globalConfiguration.DeploymentId;
             _firebaseClient = new FirebaseClient();
             _logger.Info("Initializing Firebase Membership Table");
-            _firebaseClient.BasePath = globalConfiguration.DataConnectionString;
+            var connectionString = globalConfiguration.DataConnectionString.Split("|".ToCharArray());
+            _firebaseClient.BasePath = connectionString[0];
+            if (connectionString.Length > 1)
+                _firebaseClient.Auth = connectionString[1];
             return TaskDone.Done;
         }
 
