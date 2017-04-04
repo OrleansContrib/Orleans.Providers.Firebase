@@ -17,29 +17,27 @@ namespace Orleans.Providers.Firebase.Storage
 
         public string Name { get; set; }
 
-        private string _auth;
-        private string _basePath;
         private Dictionary<string, string> _customPaths;
-        private HttpClient _httpClient;
+        private FirebaseClient _firebaseClient;
         
         public async Task ClearStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
-            await _httpClient.DeleteAsync(ConstructFirebasePath(grainType, grainReference));
+            await _firebaseClient.DeleteAsync(ConstructGrainPath(grainType, grainReference));
         }
 
         public Task Close()
         {
-            _httpClient.Dispose();
+            _firebaseClient.Dispose();
             return TaskDone.Done;
         }
 
         public Task Init(string name, IProviderRuntime providerRuntime, IProviderConfiguration config)
         {
             var props = config.Properties;
-            _httpClient = new HttpClient();
+            _firebaseClient = new FirebaseClient();
             if (props.ContainsKey("Auth"))
-                _auth = props["Auth"];
-            _basePath = props["BasePath"];
+                _firebaseClient.Auth = props["Auth"];
+            _firebaseClient.BasePath = props["BasePath"];
             _customPaths = props.ContainsKey("CustomPaths")
                 ? props["CustomPaths"].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(entry => entry.Split('='))
@@ -50,8 +48,7 @@ namespace Orleans.Providers.Firebase.Storage
 
         public async Task ReadStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
-            var response = await _httpClient.GetAsync(ConstructFirebasePath(grainType, grainReference));
-            var content = await response.Content.ReadAsStringAsync();
+            var content = await _firebaseClient.GetAsync<string>(ConstructGrainPath(grainType, grainReference));
             if (content == "null")
                 return;
             var state = JsonConvert.DeserializeObject(content, grainState.State.GetType());
@@ -60,16 +57,7 @@ namespace Orleans.Providers.Firebase.Storage
 
         public async Task WriteStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
         {
-            var response = await _httpClient.PutAsync(ConstructFirebasePath(grainType, grainReference),
-                new StringContent(JsonConvert.SerializeObject(grainState.State).ToString(), Encoding.UTF8, "application/json"));
-            if (response.StatusCode != HttpStatusCode.OK)
-                throw new Exception($"Unexpected status code ({response.StatusCode}) when persisting.");
-        }
-
-        private string ConstructFirebasePath(string grainType, GrainReference grainReference)
-        {
-            return $"{_basePath}/{ConstructGrainPath(grainType, grainReference)}.json" +
-                (_auth == null ? "" : $"?auth={_auth}");
+            await _firebaseClient.PutAsync(ConstructGrainPath(grainType, grainReference), grainState.State);
         }
 
         private string ConstructGrainPath(string grainType, GrainReference grainReference)

@@ -9,6 +9,7 @@
       <Provider Type="Orleans.Providers.Firebase.Test.Host.Bootstrap.FirebaseTestBootstrap" Name="BootstrapProvider" />
     </BootstrapProviders>
     <SeedNode Address="localhost" Port="11111" />
+    <SystemStore SystemStoreType="Custom" DataConnectionString="https://orleansprovider.firebaseio.com" MembershipTableAssembly="Orleans.Providers.Firebase" ReminderServiceType="ReminderTableGrain" ReminderTableAssembly="Orleans.Providers.Firebase"/>
   </Globals>
   <Defaults>
     <Networking Address="localhost" Port="11111" />
