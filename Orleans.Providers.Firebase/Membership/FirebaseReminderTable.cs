@@ -1,9 +1,9 @@
-﻿using System.Threading.Tasks;
-using Orleans.Runtime;
-using Orleans.Runtime.Configuration;
-
-namespace Orleans.Providers.Firebase.Membership
+﻿namespace Orleans.Providers.Firebase.Membership
 {
+    using System.Threading.Tasks;
+    using Orleans.Runtime;
+    using Orleans.Runtime.Configuration;
+
     // TODO: Implement reminders.
     public class FirebaseReminderTable : IReminderTable
     {

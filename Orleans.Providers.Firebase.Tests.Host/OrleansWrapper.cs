@@ -1,13 +1,13 @@
-﻿using System;
-using System.Net;
-using Orleans.Runtime.Configuration;
-using Orleans.Runtime.Host;
-using Orleans.Runtime;
-using System.Reflection;
-
-namespace Orleans.Providers.Firebase.Tests.Host
+﻿namespace Orleans.Providers.Firebase.Tests.Host
 {
-    class OrleansWrapper
+    using System;
+    using System.Net;
+    using System.Reflection;
+    using Orleans.Runtime;
+    using Orleans.Runtime.Configuration;
+    using Orleans.Runtime.Host;
+
+    public class OrleansWrapper
     {
         private readonly SiloHost siloHost;
 
@@ -24,13 +24,13 @@ namespace Orleans.Providers.Firebase.Tests.Host
                 config.Globals.DeploymentId = siloArgs.DeploymentId;
             }
 
-            siloHost = new SiloHost(siloArgs.SiloName);
-            siloHost.LoadOrleansConfig();
+            this.siloHost = new SiloHost(siloArgs.SiloName);
+            this.siloHost.LoadOrleansConfig();
         }
 
         public int Run()
         {
-            if (siloHost == null)
+            if (this.siloHost == null)
             {
                 SiloArgs.PrintUsage();
                 return 1;
@@ -38,21 +38,21 @@ namespace Orleans.Providers.Firebase.Tests.Host
 
             try
             {
-                siloHost.InitializeOrleansSilo();
+                this.siloHost.InitializeOrleansSilo();
 
-                if (siloHost.StartOrleansSilo())
+                if (this.siloHost.StartOrleansSilo())
                 {
-                    Console.WriteLine($"Successfully started Orleans silo '{siloHost.Name}' as a {siloHost.Type} node.");
+                    Console.WriteLine($"Successfully started Orleans silo '{this.siloHost.Name}' as a {this.siloHost.Type} node.");
                     return 0;
                 }
                 else
                 {
-                    throw new OrleansException($"Failed to start Orleans silo '{siloHost.Name}' as a {siloHost.Type} node.");
+                    throw new OrleansException($"Failed to start Orleans silo '{this.siloHost.Name}' as a {this.siloHost.Type} node.");
                 }
             }
             catch (Exception exc)
             {
-                siloHost.ReportStartupError(exc);
+                this.siloHost.ReportStartupError(exc);
                 Console.Error.WriteLine(exc);
                 return 1;
             }
@@ -60,21 +60,22 @@ namespace Orleans.Providers.Firebase.Tests.Host
 
         public int Stop()
         {
-            if (siloHost != null)
+            if (this.siloHost != null)
             {
                 try
                 {
-                    siloHost.StopOrleansSilo();
-                    siloHost.Dispose();
-                    Console.WriteLine($"Orleans silo '{siloHost.Name}' shutdown.");
+                    this.siloHost.StopOrleansSilo();
+                    this.siloHost.Dispose();
+                    Console.WriteLine($"Orleans silo '{this.siloHost.Name}' shutdown.");
                 }
                 catch (Exception exc)
                 {
-                    siloHost.ReportStartupError(exc);
+                    this.siloHost.ReportStartupError(exc);
                     Console.Error.WriteLine(exc);
                     return 1;
                 }
             }
+
             return 0;
         }
 
@@ -85,6 +86,10 @@ namespace Orleans.Providers.Firebase.Tests.Host
                 this.DeploymentId = deploymentId;
                 this.SiloName = siloName;
             }
+
+            public string SiloName { get; set; }
+
+            public string DeploymentId { get; set; }
 
             public static SiloArgs ParseArguments(string[] args)
             {
@@ -112,11 +117,12 @@ namespace Orleans.Providers.Firebase.Tests.Host
                     else if (arg.Contains("="))
                     {
                         string[] parameters = arg.Split('=');
-                        if (String.IsNullOrEmpty(parameters[1]))
+                        if (string.IsNullOrEmpty(parameters[1]))
                         {
                             Console.WriteLine($"Bad command line arguments supplied: {arg}");
                             return null;
                         }
+
                         switch (parameters[0].ToLowerInvariant())
                         {
                             case "deploymentid":
@@ -136,6 +142,7 @@ namespace Orleans.Providers.Firebase.Tests.Host
                         return null;
                     }
                 }
+
                 // Default to machine name
                 siloName = siloName ?? Dns.GetHostName();
                 return new SiloArgs(siloName, deploymentId);
@@ -151,9 +158,6 @@ namespace Orleans.Providers.Firebase.Tests.Host
                 deploymentId=<idString> - Optionally override the deployment group this host instance should run in 
                 (otherwise will use the one in the configuration");
             }
-
-            public string SiloName { get; set; }
-            public string DeploymentId { get; set; }
         }
     }
 }

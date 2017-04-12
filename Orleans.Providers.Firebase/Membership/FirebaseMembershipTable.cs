@@ -1,37 +1,40 @@
-﻿using System;
-using System.Threading.Tasks;
-using Orleans.Runtime;
-using Orleans.Runtime.Configuration;
-using System.Text;
-using System.Collections.Generic;
-using System.Net;
-
-namespace Orleans.Providers.Firebase.Membership
+﻿namespace Orleans.Providers.Firebase.Membership
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Net;
+    using System.Text;
+    using System.Threading.Tasks;
+    using Orleans.Runtime;
+    using Orleans.Runtime.Configuration;
+
     public class FirebaseMembershipTable : IMembershipTable
     {
         private const string OrleansMembershipPath = "Orleans/Membership";
-        private readonly TableVersion _tableVersion = new TableVersion(0, "0");
 
-        private string _deploymentId;
-        private FirebaseClient _firebaseClient;
-        private Logger _logger;
+        private readonly TableVersion tableVersion = new TableVersion(0, "0");
+        private string deploymentId;
+        private FirebaseClient firebaseClient;
+        private Logger logger;
 
         public async Task DeleteMembershipTableEntries(string deploymentId)
         {
-            await _firebaseClient.DeleteAsync(ConstructDeploymentPath(deploymentId));
+            await this.firebaseClient.DeleteAsync(this.ConstructDeploymentPath(deploymentId));
         }
 
         public Task InitializeMembershipTable(GlobalConfiguration globalConfiguration, bool tryInitTableVersion, Logger logger)
         {
-            _logger = logger;
-            _deploymentId = string.IsNullOrEmpty(globalConfiguration.DeploymentId) ? "Default" : globalConfiguration.DeploymentId;
-            _firebaseClient = new FirebaseClient();
-            _logger.Info("Initializing Firebase Membership Table");
+            this.logger = logger;
+            this.deploymentId = string.IsNullOrEmpty(globalConfiguration.DeploymentId) ? "Default" : globalConfiguration.DeploymentId;
+            this.firebaseClient = new FirebaseClient();
+            this.logger.Info("Initializing Firebase Membership Table");
             var connectionString = globalConfiguration.DataConnectionString.Split("|".ToCharArray());
-            _firebaseClient.BasePath = connectionString[0];
+            this.firebaseClient.BasePath = connectionString[0];
             if (connectionString.Length > 1)
-                _firebaseClient.Auth = connectionString[1];
+            {
+                this.firebaseClient.Auth = connectionString[1];
+            }
+
             return TaskDone.Done;
         }
 
@@ -39,9 +42,9 @@ namespace Orleans.Providers.Firebase.Membership
         {
             try
             {
-                var tableEntry = ConvertEntry(entry);
-                var key = CreateSiloKey(tableEntry.DeploymentId, tableEntry.SiloIdentity);
-                await _firebaseClient.PutAsync(ConstructMembershipPath(key), tableEntry);
+                var tableEntry = this.ConvertEntry(entry);
+                var key = this.CreateSiloKey(tableEntry.DeploymentId, tableEntry.SiloIdentity);
+                await this.firebaseClient.PutAsync(this.ConstructMembershipPath(key), tableEntry);
                 return true;
             }
             catch (Exception)
@@ -52,19 +55,22 @@ namespace Orleans.Providers.Firebase.Membership
 
         public async Task<MembershipTableData> ReadAll()
         {
-            var allEntries = await _firebaseClient.GetAsync<Dictionary<string, SiloInstanceRecord>>(ConstructMembershipPath());
+            var allEntries = await this.firebaseClient.GetAsync<Dictionary<string, SiloInstanceRecord>>(this.ConstructMembershipPath());
             var entries = new List<SiloInstanceRecord>();
 
             if (allEntries != null)
-            { 
+            {
                 foreach (var entry in allEntries)
                 {
                     entries.Add(entry.Value);
                 }
             }
 
-            MembershipTableData data = ConvertEntries(entries);
-            if (_logger.IsVerbose2) _logger.Verbose2("ReadAll Table=" + Environment.NewLine + "{0}", data.ToString());
+            MembershipTableData data = this.ConvertEntries(entries);
+            if (this.logger.IsVerbose2)
+            {
+                this.logger.Verbose2("ReadAll Table=" + Environment.NewLine + "{0}", data.ToString());
+            }
 
             return data;
         }
@@ -72,25 +78,28 @@ namespace Orleans.Providers.Firebase.Membership
         public Task<MembershipTableData> ReadRow(SiloAddress key)
         {
             // TODO: Implement read.
-            return Task.FromResult(new MembershipTableData(_tableVersion));
+            return Task.FromResult(new MembershipTableData(this.tableVersion));
         }
 
         public async Task UpdateIAmAlive(MembershipEntry entry)
         {
-            var key = CreateSiloKey(_deploymentId, entry.SiloAddress.ToString());
-            await _firebaseClient.PutAsync(ConstructMembershipPath($"{key}/{SiloInstanceRecord.I_AM_ALIVE_TIME_PROPERTY_NAME}"), entry.IAmAliveTime);
+            var key = this.CreateSiloKey(this.deploymentId, entry.SiloAddress.ToString());
+            await this.firebaseClient.PutAsync(this.ConstructMembershipPath($"{key}/{SiloInstanceRecord.IAmAliveTimePropertName}"), entry.IAmAliveTime);
         }
 
         public async Task<bool> UpdateRow(MembershipEntry entry, string etag, TableVersion tableVersion)
         {
             try
             {
-                if (_logger.IsVerbose) _logger.Verbose("UpdateRow entry = {0}, etag = {1}", entry.SiloAddress, etag);
-                var siloEntry = ConvertEntry(entry);
-                int currentEtag = 0;
-                if (!int.TryParse(etag, out currentEtag))
+                if (this.logger.IsVerbose)
                 {
-                    _logger.Warn(0, $"Update failed. Invalid ETag value. Will retry. Entry {entry.SiloAddress}, eTag {etag}");
+                    this.logger.Verbose("UpdateRow entry = {0}, etag = {1}", entry.SiloAddress, etag);
+                }
+
+                var siloEntry = this.ConvertEntry(entry);
+                if (!int.TryParse(etag, out int currentEtag))
+                {
+                    this.logger.Warn(0, $"Update failed. Invalid ETag value. Will retry. Entry {entry.SiloAddress}, eTag {etag}");
                     return false;
                 }
 
@@ -100,26 +109,27 @@ namespace Orleans.Providers.Firebase.Membership
 
                 try
                 {
-                    var key = CreateSiloKey(_deploymentId, entry.SiloAddress.ToString());
-                    var path = ConstructMembershipPath(key);
-                    var state = await _firebaseClient.GetAsync<SiloInstanceRecord>(path);
+                    var key = this.CreateSiloKey(this.deploymentId, entry.SiloAddress.ToString());
+                    var path = this.ConstructMembershipPath(key);
+                    var state = await this.firebaseClient.GetAsync<SiloInstanceRecord>(path);
+
                     // TODO: Handle partial deltas.
                     state.ETag = siloEntry.ETag;
-                    await _firebaseClient.PutAsync(path, state);
+                    await this.firebaseClient.PutAsync(path, state);
 
                     result = true;
                 }
                 catch (Exception e)
                 {
                     result = false;
-                    _logger.Warn(0, $"Update failed due to contention on the table. Will retry. Entry {entry.SiloAddress}, eTag {etag}", e);
+                    this.logger.Warn(0, $"Update failed due to contention on the table. Will retry. Entry {entry.SiloAddress}, eTag {etag}", e);
                 }
 
                 return result;
             }
             catch (Exception e)
             {
-                _logger.Warn(0, $"Intermediate error updating entry {entry.SiloAddress} to the membership table.", e);
+                this.logger.Warn(0, $"Intermediate error updating entry {entry.SiloAddress} to the membership table.", e);
                 throw;
             }
         }
@@ -137,7 +147,7 @@ namespace Orleans.Providers.Firebase.Membership
 
         private string ConstructMembershipPath(string subPath = null)
         {
-            return $"{OrleansMembershipPath}/{_deploymentId}{(subPath == null ? "" : "/" + subPath)}";
+            return $"{OrleansMembershipPath}/{this.deploymentId}{(subPath == null ? string.Empty : "/" + subPath)}";
         }
 
         private MembershipTableData ConvertEntries(List<SiloInstanceRecord> entries)
@@ -152,23 +162,28 @@ namespace Orleans.Providers.Firebase.Membership
                     {
                         try
                         {
-                            MembershipEntry membershipEntry = Parse(tableEntry);
+                            MembershipEntry membershipEntry = this.Parse(tableEntry);
                             memEntries.Add(new Tuple<MembershipEntry, string>(membershipEntry, tableEntry.ETag.ToString()));
                         }
-                        catch (Exception exc)
+                        catch (Exception e)
                         {
-                            _logger.Error(0,
-                                $"Intermediate error parsing SiloInstanceTableEntry to MembershipTableData: {tableEntry}. Ignoring this entry.", exc);
+                            this.logger.Error(
+                                0,
+                                $"Intermediate error parsing SiloInstanceTableEntry to MembershipTableData: {tableEntry}. Ignoring this entry.",
+                                e);
                         }
                     }
                 }
-                var data = new MembershipTableData(memEntries, _tableVersion);
+
+                var data = new MembershipTableData(memEntries, this.tableVersion);
                 return data;
             }
-            catch (Exception exc)
+            catch (Exception e)
             {
-                _logger.Error(0,
-                    $"Intermediate error parsing SiloInstanceTableEntry to MembershipTableData: {Utils.EnumerableToString(entries, e => e.ToString())}.", exc);
+                this.logger.Error(
+                    0,
+                    $"Intermediate error parsing SiloInstanceTableEntry to MembershipTableData: {Utils.EnumerableToString(entries, x => x.ToString())}.",
+                    e);
                 throw;
             }
         }
@@ -177,7 +192,7 @@ namespace Orleans.Providers.Firebase.Membership
         {
             var tableEntry = new SiloInstanceRecord
             {
-                DeploymentId = _deploymentId,
+                DeploymentId = this.deploymentId,
                 Address = memEntry.SiloAddress.Endpoint.Address.ToString(),
                 Port = memEntry.SiloAddress.Endpoint.Port,
                 Generation = memEntry.SiloAddress.Generation,
@@ -202,6 +217,7 @@ namespace Orleans.Providers.Firebase.Membership
                         siloList.Append('|');
                         timeList.Append('|');
                     }
+
                     siloList.Append(tuple.Item1.ToParsableString());
                     timeList.Append(LogFormatter.PrintDate(tuple.Item2));
                     first = false;
@@ -256,14 +272,20 @@ namespace Orleans.Providers.Firebase.Membership
             {
                 string[] times = tableEntry.SuspectingTimes.Split('|');
                 foreach (string time in times)
+                {
                     suspectingTimes.Add(LogFormatter.ParseDate(time));
+                }
             }
 
             if (suspectingSilos.Count != suspectingTimes.Count)
-                throw new OrleansException(String.Format("SuspectingSilos.Length of {0} as read from Firebase table is not equal to SuspectingTimes.Length of {1}", suspectingSilos.Count, suspectingTimes.Count));
+            {
+                throw new OrleansException(string.Format("SuspectingSilos.Length of {0} as read from Firebase table is not equal to SuspectingTimes.Length of {1}", suspectingSilos.Count, suspectingTimes.Count));
+            }
 
             for (int i = 0; i < suspectingSilos.Count; i++)
+            {
                 parse.AddSuspector(suspectingSilos[i], suspectingTimes[i]);
+            }
 
             return parse;
         }
@@ -272,7 +294,7 @@ namespace Orleans.Providers.Firebase.Membership
         {
             return new SiloInstanceRecord
             {
-                DeploymentId = _deploymentId,
+                DeploymentId = this.deploymentId,
                 IAmAliveTime = memEntry.IAmAliveTime,
                 SiloIdentity = SiloInstanceRecord.ConstructSiloIdentity(memEntry.SiloAddress)
             };

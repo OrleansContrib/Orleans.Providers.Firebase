@@ -14,6 +14,7 @@
         }
 
         public string N { get; internal set; }
+
         public string S { get; internal set; }
     }
 }

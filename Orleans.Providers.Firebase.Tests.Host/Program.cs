@@ -1,9 +1,9 @@
-﻿using Orleans.Runtime.Configuration;
-using System;
-
-namespace Orleans.Providers.Firebase.Tests.Host
+﻿namespace Orleans.Providers.Firebase.Tests.Host
 {
-    class Program
+    using System;
+    using Orleans.Runtime.Configuration;
+
+    public class Program
     {
         private static OrleansWrapper hostWrapper;
 
@@ -16,7 +16,7 @@ namespace Orleans.Providers.Firebase.Tests.Host
 
             exitCode += ShutdownSilo();
 
-            //either StartSilo or ShutdownSilo failed would result on a non-zero exit code. 
+            // either StartSilo or ShutdownSilo failed would result on a non-zero exit code.
             return exitCode;
         }
 
@@ -35,6 +35,7 @@ namespace Orleans.Providers.Firebase.Tests.Host
             {
                 return hostWrapper.Stop();
             }
+
             return 0;
         }
     }

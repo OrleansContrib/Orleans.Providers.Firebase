@@ -1,14 +1,14 @@
-﻿using System.Threading.Tasks;
-using Orleans.Providers.Firebase.Tests.Host.Interfaces;
-
-namespace Orleans.Providers.Firebase.Tests.Host.Grains
+﻿namespace Orleans.Providers.Firebase.Tests.Host.Grains
 {
+    using System.Threading.Tasks;
+    using Orleans.Providers.Firebase.Tests.Host.Interfaces;
+
     public class CustomPathInstanceGrain : Grain<int>, ICustomPathInstanceGrain
     {
         public async Task SetValue(int value)
         {
-            State = value;
-            await WriteStateAsync();
+            this.State = value;
+            await this.WriteStateAsync();
         }
     }
 }
