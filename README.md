@@ -13,10 +13,10 @@ Update OrleansConfiguration.xml in the Host application to add the following (ex
 <OrleansConfiguration xmlns="urn:orleans">
   <Globals>
     <StorageProviders>
-      <Provider Type="Orleans.Providers.Firebase.Storage.FirebaseStorageProvider" Name="Default" BasePath="https://{yourfirebasedatabase}.firebaseio.com" Auth="{yourfirebaseauth}"/>
+      <Provider Type="Orleans.Providers.Firebase.Storage.FirebaseStorageProvider" Name="Default" BasePath="https://{yourfirebasedatabase}.firebaseio.com" Key="{YourFirebaseKeyInBase64}"/>
     </StorageProviders>
     ...
-    <SystemStore SystemStoreType="Custom" DataConnectionString="https://{yourfirebasedatabase}.firebaseio.com" MembershipTableAssembly="Orleans.Providers.Firebase" ReminderServiceType="ReminderTableGrain" ReminderTableAssembly="Orleans.Providers.Firebase"/>
+    <SystemStore SystemStoreType="Custom" DataConnectionString="https://{yourfirebasedatabase}.firebaseio.com|{YourFirebaseKeyInBase64}" MembershipTableAssembly="Orleans.Providers.Firebase" ReminderServiceType="ReminderTableGrain" ReminderTableAssembly="Orleans.Providers.Firebase"/>
   </Globals>
 </OrleansConfiguration>
 ```
