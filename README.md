@@ -20,6 +20,10 @@ Update OrleansConfiguration.xml in the Host application to add the following (ex
   </Globals>
 </OrleansConfiguration>
 ```
+The Key above can be created by Base64 encoding a .json Google service account key. Powershell example:
+```xml
+powershell "[convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-Content -Path MyFirebaseServiceKey.json)))"
+```
 
 ### Examples
 See the *Orleans.Providers.Firebase.Tests.Host* project for example usage.
