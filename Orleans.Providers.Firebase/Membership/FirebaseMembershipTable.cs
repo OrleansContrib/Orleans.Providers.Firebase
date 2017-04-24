@@ -5,6 +5,7 @@
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using Orleans.Providers.Firebase.Authentication;
     using Orleans.Runtime;
     using Orleans.Runtime.Configuration;
 
@@ -22,7 +23,7 @@
             await this.firebaseClient.DeleteAsync(this.ConstructDeploymentPath(deploymentId));
         }
 
-        public Task InitializeMembershipTable(GlobalConfiguration globalConfiguration, bool tryInitTableVersion, Logger logger)
+        public async Task InitializeMembershipTable(GlobalConfiguration globalConfiguration, bool tryInitTableVersion, Logger logger)
         {
             this.logger = logger;
             this.deploymentId = string.IsNullOrEmpty(globalConfiguration.DeploymentId) ? "Default" : globalConfiguration.DeploymentId;
@@ -32,10 +33,10 @@
             this.firebaseClient.BasePath = connectionString[0];
             if (connectionString.Length > 1)
             {
-                this.firebaseClient.Auth = connectionString[1];
+                this.firebaseClient.Key = FirebaseServiceKey.FromBase64(connectionString[1]);
             }
 
-            return TaskDone.Done;
+            await this.firebaseClient.Initialize();
         }
 
         public async Task<bool> InsertRow(MembershipEntry entry, TableVersion tableVersion)

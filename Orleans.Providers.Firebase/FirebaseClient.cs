@@ -5,19 +5,23 @@
     using System.Text;
     using System.Threading.Tasks;
     using Newtonsoft.Json;
+    using Orleans.Providers.Firebase.Authentication;
 
     public class FirebaseClient
     {
+        private string accessToken;
         private HttpClient httpClient;
+        private FirebaseTokenRefresher tokenRefresher;
 
         public FirebaseClient()
         {
             this.httpClient = new HttpClient();
+            this.tokenRefresher = new FirebaseTokenRefresher();
         }
 
-        public string Auth { get; set; }
-
         public string BasePath { get; set; }
+
+        public FirebaseServiceKey Key { get; set; }
 
         public async Task DeleteAsync(string requestUri)
         {
@@ -51,9 +55,24 @@
             this.ThrowIfRequestFailed(response);
         }
 
+        public async Task Initialize()
+        {
+            await this.RefreshToken();
+        }
+
         private string ConstructFirebasePath(string path)
         {
-            return $"{this.BasePath}/{path}.json" + (this.Auth == null ? string.Empty : $"?auth={this.Auth}");
+            return $"{this.BasePath}/{path}.json" + (this.accessToken == null ? string.Empty : $"?access_token={this.accessToken}");
+        }
+
+        private async Task RefreshToken()
+        {
+            if (this.Key == null)
+            {
+                return;
+            }
+
+            this.accessToken = await this.tokenRefresher.RefreshTokenAsync(this.httpClient, this.Key);
         }
 
         private void ThrowIfRequestFailed(HttpResponseMessage response, [CallerMemberName] string operation = null)

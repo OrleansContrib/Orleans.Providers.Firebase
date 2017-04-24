@@ -5,6 +5,7 @@
     using System.Linq;
     using System.Threading.Tasks;
     using Newtonsoft.Json;
+    using Orleans.Providers.Firebase.Authentication;
     using Orleans.Runtime;
     using Orleans.Storage;
 
@@ -28,13 +29,13 @@
             return TaskDone.Done;
         }
 
-        public Task Init(string name, IProviderRuntime providerRuntime, IProviderConfiguration config)
+        public async Task Init(string name, IProviderRuntime providerRuntime, IProviderConfiguration config)
         {
             var props = config.Properties;
             this.firebaseClient = new FirebaseClient();
-            if (props.ContainsKey("Auth"))
+            if (props.ContainsKey("Key"))
             {
-                this.firebaseClient.Auth = props["Auth"];
+                this.firebaseClient.Key = FirebaseServiceKey.FromBase64(props["Key"]);
             }
 
             this.firebaseClient.BasePath = props["BasePath"];
@@ -43,7 +44,8 @@
                     .Select(entry => entry.Split('='))
                     .ToDictionary(split => split[0], split => split[1])
                 : new Dictionary<string, string>();
-            return TaskDone.Done;
+
+            await this.firebaseClient.Initialize();
         }
 
         public async Task ReadStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
@@ -54,8 +56,7 @@
                 return;
             }
 
-            var state = JsonConvert.DeserializeObject(content, grainState.State.GetType());
-            grainState.State = state;
+            grainState.State = JsonConvert.DeserializeObject(content, grainState.State.GetType());
         }
 
         public async Task WriteStateAsync(string grainType, GrainReference grainReference, IGrainState grainState)
