@@ -11,7 +11,7 @@
 
     public class FirebaseMembershipTable : IMembershipTable
     {
-        private const string OrleansMembershipPath = "Orleans/Membership";
+        private const string OrleansMembershipPath = "orleans/membership";
 
         private readonly TableVersion tableVersion = new TableVersion(0, "0");
         private string deploymentId;
@@ -26,7 +26,7 @@
         public async Task InitializeMembershipTable(GlobalConfiguration globalConfiguration, bool tryInitTableVersion, Logger logger)
         {
             this.logger = logger;
-            this.deploymentId = string.IsNullOrEmpty(globalConfiguration.DeploymentId) ? "Default" : globalConfiguration.DeploymentId;
+            this.deploymentId = FirebaseClient.ToCamelCase(string.IsNullOrEmpty(globalConfiguration.DeploymentId) ? "Default" : globalConfiguration.DeploymentId);
             this.firebaseClient = new FirebaseClient();
             this.logger.Info("Initializing Firebase Membership Table");
             var connectionString = globalConfiguration.DataConnectionString.Split("|".ToCharArray());
@@ -138,7 +138,7 @@
         private string CreateSiloKey(string deploymentId, string siloIdentity)
         {
             siloIdentity = siloIdentity.Replace("-", ":").TrimStart('S');
-            return Convert.ToBase64String(Encoding.ASCII.GetBytes($"{deploymentId}_{siloIdentity}"));
+            return $"silo_{Convert.ToBase64String(Encoding.ASCII.GetBytes($"{deploymentId}_{siloIdentity}"))}";
         }
 
         private string ConstructDeploymentPath(string deploymentId)
@@ -148,7 +148,7 @@
 
         private string ConstructMembershipPath(string subPath = null)
         {
-            return $"{OrleansMembershipPath}/{this.deploymentId}{(subPath == null ? string.Empty : "/" + subPath)}";
+            return $"{OrleansMembershipPath}/{this.deploymentId}{(subPath == null ? string.Empty : "/" + FirebaseClient.ToCamelCase(subPath))}";
         }
 
         private MembershipTableData ConvertEntries(List<SiloInstanceRecord> entries)

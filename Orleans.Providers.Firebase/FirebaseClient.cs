@@ -5,23 +5,41 @@
     using System.Text;
     using System.Threading.Tasks;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
     using Orleans.Providers.Firebase.Authentication;
 
     public class FirebaseClient
     {
         private string accessToken;
         private HttpClient httpClient;
+        private JsonSerializerSettings settings;
         private FirebaseTokenRefresher tokenRefresher;
 
         public FirebaseClient()
         {
             this.httpClient = new HttpClient();
+            this.settings = new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() };
             this.tokenRefresher = new FirebaseTokenRefresher();
         }
 
         public string BasePath { get; set; }
 
         public FirebaseServiceKey Key { get; set; }
+
+        public static string ToCamelCase(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                if (value == null)
+                {
+                    return null;
+                }
+
+                return value;
+            }
+
+            return char.ToLowerInvariant(value[0]) + value.Substring(1);
+        }
 
         public async Task DeleteAsync(string requestUri)
         {
@@ -51,7 +69,7 @@
         {
             var response = await this.httpClient.PutAsync(
                 this.ConstructFirebasePath(requestUri),
-                new StringContent(JsonConvert.SerializeObject(content).ToString(), Encoding.UTF8, "application/json"));
+                new StringContent(JsonConvert.SerializeObject(content, this.settings).ToString(), Encoding.UTF8, "application/json"));
             this.ThrowIfRequestFailed(response);
         }
 

@@ -79,7 +79,7 @@
             var entityPath = grainTypeName.Length > 5 && grainTypeName.EndsWith("Grain")
                 ? grainTypeName.Substring(0, grainTypeName.Length - 5)
                 : grainTypeName;
-            return $"{entityPath}/{instanceName}";
+            return $"{FirebaseClient.ToCamelCase(entityPath)}s/{FirebaseClient.ToCamelCase(instanceName)}";
         }
     }
 }
